@@ -139,8 +139,9 @@ flatbuffers.Long.ZERO = new flatbuffers.Long(0, 0);
  *
  * @constructor
  * @param {number=} opt_initial_size
+ * @param {Uint8Array=} opt_buffer
  */
-flatbuffers.Builder = function(opt_initial_size) {
+flatbuffers.Builder = function(opt_initial_size, opt_buffer) {
   if (!opt_initial_size) {
     var initial_size = 1024;
   } else {
@@ -151,7 +152,9 @@ flatbuffers.Builder = function(opt_initial_size) {
    * @type {flatbuffers.ByteBuffer}
    * @private
    */
-  this.bb = flatbuffers.ByteBuffer.allocate(initial_size);
+  this.bb = opt_buffer ?
+    new flatbuffers.ByteBuffer(opt_buffer) :
+    flatbuffers.ByteBuffer.allocate(initial_size);
 
   /**
    * Remaining space in the ByteBuffer.
