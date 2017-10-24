@@ -828,7 +828,8 @@ flatbuffers.ByteBuffer = function(bytes) {
  * @returns {flatbuffers.ByteBuffer}
  */
 flatbuffers.ByteBuffer.allocate = function(byte_size) {
-  return new flatbuffers.ByteBuffer(new Uint8Array(byte_size));
+  // NOTE: This was modified to use the superior Node Buffer interface
+  return new flatbuffers.ByteBuffer(Buffer.alloc(byte_size));
 };
 
 /**
