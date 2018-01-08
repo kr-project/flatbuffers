@@ -60,6 +60,8 @@ set(FlatBuffers_Compiler_SRCS
   grpc/src/compiler/cpp_generator.cc
   grpc/src/compiler/go_generator.h
   grpc/src/compiler/go_generator.cc
+  grpc/src/compiler/java_generator.h
+  grpc/src/compiler/java_generator.cc
 )
 
 set(FlatHash_SRCS
@@ -189,7 +191,16 @@ endif()
 
 if(FLATBUFFERS_BUILD_SHAREDLIB)
   add_library(flatbuffers_shared SHARED ${FlatBuffers_Library_SRCS})
-  set_target_properties(flatbuffers_shared PROPERTIES OUTPUT_NAME flatbuffers)
+
+  # Shared object version: "major.minor.micro"
+  # - micro updated every release when there is no API/ABI changes
+  # - minor updated when there are additions in API/ABI
+  # - major (ABI number) updated when there are changes in ABI (or removals)
+  set(FlatBuffers_Library_SONAME_MAJOR "1")
+  set(FlatBuffers_Library_SONAME_FULL "${FlatBuffers_Library_SONAME_MAJOR}.8.0")
+  set_target_properties(flatbuffers_shared PROPERTIES OUTPUT_NAME flatbuffers
+                        SOVERSION "${FlatBuffers_Library_SONAME_MAJOR}"
+                        VERSION "${FlatBuffers_Library_SONAME_FULL}")
 endif()
 
 function(compile_flatbuffers_schema_to_cpp SRC_FBS)
@@ -235,19 +246,82 @@ if(FLATBUFFERS_BUILD_GRPCTEST)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-shadow")
   endif()
   add_executable(grpctest ${FlatBuffers_GRPCTest_SRCS})
-  target_link_libraries(grpctest grpc++_unsecure pthread dl)
+  target_link_libraries(grpctest grpc++_unsecure grpc_unsecure gpr pthread dl)
 endif()
 
 if(FLATBUFFERS_INSTALL)
-  install(DIRECTORY include/flatbuffers DESTINATION include)
+  include(GNUInstallDirs)
+
+  install(DIRECTORY include/flatbuffers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+  set(FB_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/flatbuffers")
+
+  install(
+      FILES "CMake/FlatbuffersConfig.cmake"
+      DESTINATION ${FB_CMAKE_DIR}
+  )
+
   if(FLATBUFFERS_BUILD_FLATLIB)
-    install(TARGETS flatbuffers DESTINATION lib)
+    if(CMAKE_VERSION VERSION_LESS 3.0)
+      install(
+        TARGETS flatbuffers EXPORT FlatbuffersTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
+    else()
+      install(
+        TARGETS flatbuffers EXPORT FlatbuffersTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+    endif()
+
+    install(EXPORT FlatbuffersTargets
+      FILE FlatbuffersTargets.cmake
+      NAMESPACE flatbuffers::
+      DESTINATION ${FB_CMAKE_DIR}
+    )
   endif()
+
   if(FLATBUFFERS_BUILD_FLATC)
-    install(TARGETS flatc DESTINATION bin)
+    install(
+      TARGETS flatc EXPORT FlatcTargets
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      CONFIGURATIONS Release
+    )
+
+    install(
+      EXPORT FlatcTargets
+      FILE FlatcTargets.cmake
+      NAMESPACE flatbuffers::
+      DESTINATION ${FB_CMAKE_DIR}
+      CONFIGURATIONS Release
+    )
   endif()
+
   if(FLATBUFFERS_BUILD_SHAREDLIB)
-    install(TARGETS flatbuffers_shared DESTINATION lib)
+    if(CMAKE_VERSION VERSION_LESS 3.0)
+      install(
+        TARGETS flatbuffers_shared EXPORT FlatbuffersSharedTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
+    else()
+      install(
+        TARGETS flatbuffers_shared EXPORT FlatbuffersSharedTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+    endif()
+
+  install(
+      EXPORT FlatbuffersSharedTargets
+      FILE FlatbuffersSharedTargets.cmake
+      NAMESPACE flatbuffers::
+      DESTINATION ${FB_CMAKE_DIR}
+    )
   endif()
 endif()
 

@@ -141,9 +141,6 @@ MANUALLY_ALIGNED_STRUCT(4) Rapunzel FLATBUFFERS_FINAL_CLASS {
   Rapunzel() {
     memset(this, 0, sizeof(Rapunzel));
   }
-  Rapunzel(const Rapunzel &_o) {
-    memcpy(this, &_o, sizeof(Rapunzel));
-  }
   Rapunzel(int32_t _hair_length)
       : hair_length_(flatbuffers::EndianScalar(_hair_length)) {
   }
@@ -163,9 +160,6 @@ MANUALLY_ALIGNED_STRUCT(4) BookReader FLATBUFFERS_FINAL_CLASS {
  public:
   BookReader() {
     memset(this, 0, sizeof(BookReader));
-  }
-  BookReader(const BookReader &_o) {
-    memcpy(this, &_o, sizeof(BookReader));
   }
   BookReader(int32_t _books_read)
       : books_read_(flatbuffers::EndianScalar(_books_read)) {
@@ -461,6 +455,7 @@ inline bool VerifyCharacter(flatbuffers::Verifier &verifier, const void *obj, Ch
 }
 
 inline bool VerifyCharacterVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+  if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
   for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
     if (!VerifyCharacter(

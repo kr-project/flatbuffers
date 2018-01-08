@@ -17,9 +17,13 @@
 #ifndef FLATBUFFERS_STL_EMULATION_H_
 #define FLATBUFFERS_STL_EMULATION_H_
 
+// clang-format off
+
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <memory>
+#include <limits>
 
 #if defined(_STLPORT_VERSION) && !defined(FLATBUFFERS_CPP98_STL)
   #define FLATBUFFERS_CPP98_STL
@@ -34,6 +38,10 @@ namespace flatbuffers {
 
 // Retrieve ::back() from a string in a way that is compatible with pre C++11
 // STLs (e.g stlport).
+inline char& string_back(std::string &value) {
+  return value[value.length() - 1];
+}
+
 inline char string_back(const std::string &value) {
   return value[value.length() - 1];
 }
